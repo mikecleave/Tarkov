@@ -8,6 +8,12 @@
 3. 
 """
 
+"""
+HOW TO PACKAGE:
+Open a command prompt/shell window, and navigate to the directory where your .py file is located, then build your app with the following command:
+pyinstaller --onedir --add-data "Img:Img" --contents-directory "." Market.py
+"""
+
 import pyautogui
 import cv2
 import numpy as np
@@ -17,8 +23,12 @@ from screeninfo import get_monitors
 import pytesseract
 
 from PIL import Image, ImageDraw
+
 import tkinter as tk
 from tkinter import Canvas
+from tkinter import messagebox
+root = tk.Tk()
+root.withdraw()  # Hides the root window
 
 import re
 
@@ -208,7 +218,7 @@ def CaptchaTextRecognition(captureRegion):
     return text
 
 def CheckForCaptcha():
-    securityCheckPosition = pyautogui.locateOnScreen("Img/Security Check.png", confidence=0.6)
+    securityCheckPosition = pyautogui.locateOnScreen("Img/SecurityCheck.png", confidence=0.6)
     if (securityCheckPosition is None):
         print("There is no captcha")
         return
@@ -328,6 +338,7 @@ def SellItemOnFlee(itemFileName, sellPrice):
 
 #Main Loop
 if __name__ == "__main__":
+    messagebox.showinfo("Information", "To stop the progam, move your cursor to the  top left of the screen.\nProgram will start when you press OK.")
     CheckForCaptcha()
     while False: #Used to test the position of stuff on my screen. Update it to True to use it. 
         x, y = pyautogui.position()
@@ -354,5 +365,6 @@ if __name__ == "__main__":
         stashFull = False
 
 print('Program stopped')
+messagebox.showinfo("Information", "Program stopped!")
 
 
