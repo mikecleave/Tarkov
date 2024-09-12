@@ -3,9 +3,19 @@
 
 """
 *** To DO ***
-1. Buy and resell esmarches from Fence
-2. Update code to use % of screen instead of hard coded coordinates. This will allow my program to work on all monitors. 
-3. 
+1. Update code to use % of screen instead of hard coded coordinates. This will allow my program to work on all monitors. Not sure if this is actually needed...
+2. Esmarch improvments:
+    - If I am only buying esmarches, I should not bother refreshing the stock if there is 1 image on the screen. Will allow me to buy them faster. 
+
+3. Buy bandages:
+    - Check the market to see the current price. If it is below the minimum, don't buy and sell any. 
+    - Check if I already have a listing. If I do, don't buy and sell any.
+    - If I am going to buy them, I want to make sure my inventory is empty as possible so I can do 1 large bulk sell. Need to sell off other items first before I start buying.
+    - 
+
+4. Once I have higher lvl traders, buy and resell their items:
+    - Check the min flee sell price and see the difference between the buy price from the trader.     
+5. Make a debug version where I draw a red box around the image I am trying to click. 
 """
 
 """
