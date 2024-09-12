@@ -4,17 +4,21 @@
 """
 *** To DO ***
 1. Update code to use % of screen instead of hard coded coordinates. This will allow my program to work on all monitors. Not sure if this is actually needed...
+2. Add a msg  box that the program has stopped when the user moves their cursor to the top left of the screen. 
+2. When buying an item, check the quantity I am buying to I can create a summary report. Or instead, only check how many items I list when I sell them on the flee. 
 2. Esmarch improvments:
     - If I am only buying esmarches, I should not bother refreshing the stock if there is 1 image on the screen. Will allow me to buy them faster. 
 
 3. Buy bandages:
+    - Fence sells them for 1893 rubles. 
     - Check the market to see the current price. If it is below the minimum, don't buy and sell any. 
     - Check if I already have a listing. If I do, don't buy and sell any.
     - If I am going to buy them, I want to make sure my inventory is empty as possible so I can do 1 large bulk sell. Need to sell off other items first before I start buying.
     - 
 
 4. Once I have higher lvl traders, buy and resell their items:
-    - Check the min flee sell price and see the difference between the buy price from the trader.     
+    - Check the min flee sell price and see the difference between the buy price from the trader.
+    - Buy gernades every reset.      
 5. Make a debug version where I draw a red box around the image I am trying to click. 
 """
 
@@ -310,7 +314,7 @@ def BuyItemFromFence(itemName, quantity=1, filterName="AllFilterBtn"):
         ClickImage("DealBtn", 0.1)
         time.sleep(1) # Wait for any popup messages to appear. 
 
-        if (ClickImage("ItemAlreadySold", 1)):
+        if (ClickImage("ItemAlreadySold", 2.5)): #Needs to be high
             print("Item already sold")
             ClickImage("OKBtn", 0.1)
             ClickImage("RefreshStore", 0.5)
