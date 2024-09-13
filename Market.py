@@ -5,7 +5,9 @@
 *** To DO ***
 1. Update code to use % of screen instead of hard coded coordinates. This will allow my program to work on all monitors. Not sure if this is actually needed...
 2. Add a msg  box that the program has stopped when the user moves their cursor to the top left of the screen. 
+2. If I run out of money, I need to accept the money from Ragman. 
 2. When buying an item, check the quantity I am buying to I can create a summary report. Or instead, only check how many items I list when I sell them on the flee. 
+2. When I buy an item from fence, I need to keep buying it until its out of stock before switching to the next item. 
 2. Esmarch improvments:
     - If I am only buying esmarches, I should not bother refreshing the stock if there is 1 image on the screen. Will allow me to buy them faster. 
 
@@ -27,7 +29,7 @@ HOW TO PACKAGE:
 Open a command prompt/shell window, and navigate to the directory where your .py file is located, then build your app with the following command:
 pyinstaller --onedir --add-data "Img:Img" --contents-directory "." Market.py
 """
-
+import sys
 import pyautogui
 import cv2
 import numpy as np
@@ -85,7 +87,8 @@ def DrawRedBox(region):
     cv2.destroyAllWindows()
 
 # Find the location of the image on the screen
-def FindImageOnScreen(template_path, region=None, grayscale=False):    
+def FindImageOnScreen(imageName, region=None, grayscale=False):
+    template_path = f"Img/{imageName}.png"    
     #print("Start Looking")
     imageLocation = pyautogui.locateOnScreen(template_path, region=region, grayscale=grayscale, confidence=.8)
     #print(imageLocation)
@@ -127,7 +130,7 @@ def GetMonitorRegion():
         return screenRegion
 
 def ClickImage(imageName, delay=1, region=None, grayscale=False):
-    position = FindImageOnScreen(f"Img/{imageName}.png", region, grayscale=grayscale)
+    position = FindImageOnScreen(imageName, region, grayscale=grayscale)
     if position:
         print(f"Found {imageName} at: {position}")
         Click(position[0], position[1], delay)
@@ -139,7 +142,7 @@ def ClickImage(imageName, delay=1, region=None, grayscale=False):
 def MustClickImage(imageName, delay=1, region=None):
     successfull = False
     while not successfull:
-        position = FindImageOnScreen(f"Img/{imageName}.png", region)
+        position = FindImageOnScreen(imageName, region)
         if position:
             print(f"Found {imageName} at: {position}")
             Click(position[0], position[1], delay)
@@ -171,8 +174,7 @@ def PreprocessImage(image):
     _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     return thresh
 
-def ImageRecognition(left, top, width, height):
-    captureRegion = (left, top, width, height)  #(left, top, width, height) Adjust these values to capture the desired area
+def ImageRecognition(captureRegion):
     # Take a screenshot of the specified captureRegion
     screenshot = pyautogui.screenshot(region=captureRegion)
 
@@ -198,11 +200,12 @@ def ImageRecognition(left, top, width, height):
     
     try:
         # Convert the cleaned string to a float, then to an integer to remove decimal places
-        number_int = int(float(cleaned_number))
+        #number_int = int(float(cleaned_number))
         
         # Format as currency without decimal places and add the ruble symbol
-        formatted_number = f"₽{number_int:,}"
-        return formatted_number
+        #formatted_number = f"₽{number_int:,}"
+        #return formatted_number
+        return cleaned_number
     except ValueError:
         print(f"The OCR result '{number}' could not be converted to a valid number.")
         return 0
@@ -253,7 +256,9 @@ def CheckForCaptcha():
         captchaText = CaptchaTextRecognition(captchaTextRegion)
         print("captchaText: " + captchaText)
         ClickAllInstances(captchaText, CaptchaImageRegion)
-        ClickImage("ConfirmBtn", 0.1)
+        
+        #ClickImage("ConfirmBtn", 0.1)
+        pyautogui.write("y") # Same thing as clicking the confirm button. 
         return captchaTextRegion
     else:
         print("ConfirmNotABot image not found on the screen.")
@@ -261,7 +266,6 @@ def CheckForCaptcha():
 
 def ClickAllInstances(imageName, theRegion=None, min_distance=60):
     # Locate all instances of the image, with confidence level
-    
     locations = list(pyautogui.locateAllOnScreen(f"Img/{imageName}.png", region=theRegion, confidence=0.9))
 
     if not locations:
@@ -270,7 +274,6 @@ def ClickAllInstances(imageName, theRegion=None, min_distance=60):
 
     # List to store filtered locations (no duplicates)
     filtered_locations = []
-
     for loc in locations:
         # Get the center of the current location
         center = pyautogui.center(loc)
@@ -289,32 +292,39 @@ def ClickAllInstances(imageName, theRegion=None, min_distance=60):
     for center in filtered_locations:
         pyautogui.moveTo(center)
         pyautogui.click()
-        time.sleep(0.5)  # Optional delay between clicks
+        time.sleep(0.1)  # Optional delay between clicks
 
     print(f"Clicked on {len(filtered_locations)} instances of {imageName}")   
 
 def BuyFromFence():
+    itemsToBuy = [
+        { "name": "Esmarch tourniquet", "filter": "AllFilterBtn", "minSellPrice": 4262, "fenceCost": 2496 },
+        { "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
+        { "name": "BOSS cap", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 10859 },
+        #{ "name": "Aseptic bandage", "filter": "AllFilterBtn", "minSellPrice": 2147, "fenceCost": 1893} # Only 142 ruble profit. 
+    ]
+
     MustClickImage("TradersTab")
     MustClickImage("FenceIcon")
+    ClickImage("BuyBtn") #Makes sure the Buy tab is selected instead of the Sell tab.
 
     while not stashFull:
-        BuyItemFromFence("Esmarch tourniquet", 50)
-        #BuyItemFromFence("Aseptic bandage", 10)
-        #BuyItemFromFence("Lower half-mask", 99, "ClothingFilterBtn")
-
-def BuyItemFromFence(itemName, quantity=1, filterName="AllFilterBtn"):
-    ClickImage("BuyBtn") #Makes sure the Buy tab is selected instead of the Sell tab.
+        checkRubleBalance()
+        for item in itemsToBuy:
+            BuyItemFromFence(item['name'], filterName=item["filter"])
+            
+def BuyItemFromFence(itemName, quantity=50, filterName="AllFilterBtn"):
     ClickImage(filterName, 0.1, traderStoreRegion) #Apply a filter if specified. 
-    
     CheckForCaptcha()
+
     print("Attempting to buy " + itemName)
-    if ClickImage(itemName, 0.1, traderStoreRegion):
+    if ClickImage(itemName, 0.1, traderStoreRegion): # Clicks on the item I want to buy. 
         ClickImage("ItemQuantityBtn", 0.1) # Click on the 1 before I start typing in the quanity. Required when I select and item and then select it again later. 
         pyautogui.write(str(quantity))
         ClickImage("DealBtn", 0.1)
         time.sleep(1) # Wait for any popup messages to appear. 
 
-        if (ClickImage("ItemAlreadySold", 2.5)): #Needs to be high
+        if (ClickImage("ItemAlreadySold", 2.5)): #Needs to be a high wait time. 
             print("Item already sold")
             ClickImage("OKBtn", 0.1)
             ClickImage("RefreshStore", 0.5)
@@ -337,6 +347,40 @@ def BuyItemFromFence(itemName, quantity=1, filterName="AllFilterBtn"):
     else:
         ClickImage("RefreshStore", 0.1)
 
+def checkRubleBalance():
+    # My ruble balance is located in different locations depending on which tab is selected. 
+    characterTabRubleRegion = (1620, 45, 145, 25)
+    traderTabRubleRegion = (1360, 105, 120, 20)
+    fleeMarketRubleRegion = (1475, 70, 125, 20)
+
+    myRublesStr = None
+    while myRublesStr is None:    
+        if (FindImageOnScreen("CharacterTabSelected")) : rubleRegion = characterTabRubleRegion
+        if (FindImageOnScreen("TraderTabSelected")) : rubleRegion = traderTabRubleRegion
+        if (FindImageOnScreen("FleaMarketTabSelected")) : rubleRegion = fleeMarketRubleRegion
+        #DrawRedBox(rubleRegion)
+        myRublesStr = ImageRecognition(rubleRegion)
+
+    # Format as currency without decimal places and add the ruble symbol
+    myRublesInt = int(float(myRublesStr))
+    formattedNum = f"₽{myRublesInt:,}"
+    print(f"My Rubles: {formattedNum}")
+
+    if (int(myRublesStr) < 500000): collectRublesFromRagman()
+
+
+def collectRublesFromRagman():
+    ClickImage("MessengerTab")
+    time.sleep(2)                       # Wait for the msg popup to appear.
+    ClickImage("RagmanMsgSelected")     # Don't know which image is going to be visible so we check both.
+    ClickImage("RagmanMsgNotSelected")  # Don't know which image is going to be visible so we check both.
+    ClickImage("ReceiveAllBtn1")        # First click is to display my money to collect. 
+    MustClickImage("ReceiveAllBtn2")    # Second click is to actaully collect the money.
+    time.sleep(5)                       # The more money I have, the longer I need to wait. 
+    MustClickImage("AcceptBtn")         # Closes the collection window.
+    return
+
+
 def SellItemOnFlee(itemFileName, sellPrice):
     MustClickImage("FleeMarketTab")
     MustClickImage("AddOfferBtn")
@@ -352,11 +396,14 @@ def SellItemOnFlee(itemFileName, sellPrice):
 
 #Main Loop
 if __name__ == "__main__":
-    messagebox.showinfo("Information", "To stop the progam, move your cursor to the  top left of the screen.\nProgram will start when you press OK.")
+    
+    # Code that only runs when packaged (i.e., when running as an executable)
+    if getattr(sys, 'frozen', False): messagebox.showinfo("Information", "To stop the progam, move your cursor to the  top left of the screen.\nProgram will start when you press OK.")
+    
     CheckForCaptcha()
     while False: #Used to test the position of stuff on my screen. Update it to True to use it. 
         x, y = pyautogui.position()
-        #print(f"Current cursor position: ({x}, {y})")
+        print(f"Current cursor position: ({x}, {y})")
         #CheckForCaptcha()
         #DrawRedBox(CaptchaImageRegion)
 
@@ -367,11 +414,10 @@ if __name__ == "__main__":
         ClickImage("MainMenuTab", 2)
         ClickImage("CharacterTab", 2)
         
-        #My Rubles
-        #myRubles = ImageRecognition(1620, 45, 145, 25) #(left, top, width, height) Adjust these values to capture the desired area
-        #print(f"My Rubles: {myRubles}")
+        
 
         BuyFromFence()
+        
         
         SellItemOnFlee("Esmarch tourniquet", 4262)
         #SellItemOnFlee("Aseptic bandage", 2149)
@@ -379,6 +425,8 @@ if __name__ == "__main__":
         stashFull = False
 
 print('Program stopped')
-messagebox.showinfo("Information", "Program stopped!")
+
+# Code that only runs when packaged (i.e., when running as an executable)
+if getattr(sys, 'frozen', False): messagebox.showinfo("Information", "Program stopped!")
 
 
