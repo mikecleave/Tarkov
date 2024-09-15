@@ -1,31 +1,26 @@
-#This is to be run full screen on my larger monitor. 
-#You must use the Woods background menu screen.
+"""
+SET UP:
+1. Must set your monitor resolution to 1920 x 1080.
+
+*** Discuss wishlist setup ***
+
+"""
+
 
 """
 *** To DO ***
-1. Update code to use % of screen instead of hard coded coordinates. This will allow my program to work on all monitors. Not sure if this is actually needed...
-2. Add a msg  box that the program has stopped when the user moves their cursor to the top left of the screen. 
-2. If I run out of money, I need to accept the money from Ragman. 
-2. When buying an item, check the quantity I am buying to I can create a summary report. Or instead, only check how many items I list when I sell them on the flee. 
+1. Add a msg  box that the program has stopped when the user moves their cursor to the top left of the screen. 
 2. When I buy an item from fence, I need to keep buying it until its out of stock before switching to the next item. 
-2. Esmarch improvments:
+3. If I drop below a specific amount of money, I need to accept the money from Ragman.
+4. Buy barter items low and resell them high. Ex: buy wires for 10k or less and sell hem for 13k.
+
+1. Esmarch improvments:
     - If I am only buying esmarches, I should not bother refreshing the stock if there is 1 image on the screen. Will allow me to buy them faster. 
-
-3. Buy bandages:
-    - Fence sells them for 1893 rubles. 
-    - Check the market to see the current price. If it is below the minimum, don't buy and sell any. 
-    - Check if I already have a listing. If I do, don't buy and sell any.
-    - If I am going to buy them, I want to make sure my inventory is empty as possible so I can do 1 large bulk sell. Need to sell off other items first before I start buying.
-    - 
-
-4. Once I have higher lvl traders, buy and resell their items:
-    - Check the min flee sell price and see the difference between the buy price from the trader.
-    - Buy gernades every reset.      
-5. Make a debug version where I draw a red box around the image I am trying to click. 
 """
 
+
 """
-HOW TO PACKAGE:
+*** HOW TO PACKAGE ***
 Open a command prompt/shell window, and navigate to the directory where your .py file is located, then build your app with the following command:
 pyinstaller --onedir --add-data "Img:Img" --contents-directory "." Market.py
 """
@@ -49,9 +44,19 @@ root.withdraw()  # Hides the root window
 import re
 
 traderStoreRegion = (0, 0, 700, 1000)
-fleeSellingRegion = (0, 0, 650, 800) #Your flee selling windown needs to be in the top left corner.
+fleeSellingRegion = (0, 0, 650, 1000) #Your flee selling windown needs to be in the top left corner.
 #CaptchaTextRegion = (777, 365, 372, 26)
 CaptchaImageRegion = (684, 230, 546, 813)
+fleaOfferNumRegion = (420, 46, 33, 17)
+
+# IF THIS LIST IS NOT IN THE SAME ORDER AS MY IN GAME WISH LIST, IT WILL BUY THE WRONG ROW ITEM. 
+wishListItems = [
+    { "name": "AK-101 Mag", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 4497, "traderCost": 1808 },
+    { "name": "Ammo Case", "rowToPurchase": 1, "rowWithMinCost": 3, "minSellPrice": 199897, "traderCost": 162552 },
+    { "name": "F-1 hand grenade", "rowToPurchase": 2, "rowWithMinCost": 5,"minSellPrice": 14997, "traderCost": 9156 },
+    { "name": "PACA", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 29151, "traderCost": 10000 },
+    { "name": "Rye crutons", "rowToPurchase": 2, "rowWithMinCost": 3, "minSellPrice": 19997, "traderCost": 10000 },
+]
 
 stashFull = False
 
@@ -107,7 +112,8 @@ def ClickAndHold(x, y, duration = 3):
     #print("Mouse Up")
     pyautogui.mouseUp()
 
-def Click(x, y, delay):
+def Click(coordinates, delay=0.1):
+    x, y = coordinates
     time.sleep(delay)  # Add delay before the click
     pyautogui.moveTo(x, y)
     pyautogui.click()
@@ -130,40 +136,60 @@ def GetMonitorRegion():
         return screenRegion
 
 def ClickImage(imageName, delay=1, region=None, grayscale=False):
+    time.sleep(delay)  # Add delay before trying to find the image
     position = FindImageOnScreen(imageName, region, grayscale=grayscale)
     if position:
         print(f"Found {imageName} at: {position}")
-        Click(position[0], position[1], delay)
+        Click(position)
         return True
     else:
         print(f"{imageName} not found on the screen.")
         return False
 
 def MustClickImage(imageName, delay=1, region=None):
-    successfull = False
-    while not successfull:
+    isSuccessfull = False
+    while not isSuccessfull:
         position = FindImageOnScreen(imageName, region)
         if position:
             print(f"Found {imageName} at: {position}")
-            Click(position[0], position[1], delay)
-            successfull = True
+            Click(position, delay)
+            isSuccessfull = True
         else:
             print(f"{imageName} not found on the screen.")
 
-def ScrollToClick(imageName, delay=1, region=None):
-    successfull = False
+def ScrollToTop():
+    print("Scrolling to the top to reset for the next item")
+    for i in range(50):
+        pyautogui.scroll(5000) #Scroll up - doesn't matter what the number is. Each one will only scroll 1 line
 
+def ScrollDown(rowsToScroll):
+    for i in range(rowsToScroll):
+        pyautogui.scroll(-5000) #Scroll down - doesn't matter what the number is. Each one will only scroll 1 line
+
+def ScrollToClick(imageName, delay=1, region=None):
+    isSuccessfull = False
+    scrollCount = 0
     # Scroll until the item is found OR you reach the bottom. 
-    while not successfull and (not ClickImage("ScrollBottom", 0.01)):
-        position = FindImageOnScreen(f"Img/{imageName}.png", region)
+    while not isSuccessfull and scrollCount < 10:
+        position = FindImageOnScreen(imageName, region)
         if position:
             print(f"Found {imageName} at: {position}")
-            Click(position[0], position[1], delay)
-            successfull = True
+            #*****************************************************************************
+            # NEED TO RIGHTCLICK AND CHECK THE MIN PRICE OF THE ITEM ON THE FLEE.
+            GetItemMinPrice(imageName)
+            #*****************************************************************************
+            Click(position, delay)
+            isSuccessfull = True
+            return True
         else:
             print(f"{imageName} not found on the screen. Scrolling down")
             pyautogui.moveTo(region)
-            pyautogui.scroll(-5000) #Scroll down
+            ScrollDown(6)
+            scrollCount = scrollCount + 1
+
+    if isSuccessfull == False:
+        return False   
+
 
 def PreprocessImage(image):
     # Convert to grayscale
@@ -181,14 +207,9 @@ def ImageRecognition(captureRegion):
     # Save the screenshot
     imageFilePath = 'C:/Users/Mike/Documents/Tarkov/Screenshots/screenshot.png'
     screenshot.save(imageFilePath)
-    #print(f"Screenshot saved to: {imageFilePath}")
     
     # Load the captured screenshot image
-    #image = Image.open(imageFilePath)
     image = cv2.imread(imageFilePath)
-
-    # Preprocess the image
-    #PreprocessedImage = PreprocessImage(image)
 
     # Use Tesseract to do OCR on the image
     customConfig = r'--oem 3 --psm 6 tessedit_char_whitelist=0123456789₽'
@@ -216,7 +237,6 @@ def CaptchaTextRecognition(captureRegion):
     # Save the screenshot
     imageFilePath = 'C:/Users/Mike/Documents/Tarkov/Screenshots/screenshot.png'
     screenshot.save(imageFilePath)
-    #print(f"Screenshot saved to: {imageFilePath}")
     
     image = cv2.imread(imageFilePath)
 
@@ -298,10 +318,11 @@ def ClickAllInstances(imageName, theRegion=None, min_distance=60):
 
 def BuyFromFence():
     itemsToBuy = [
-        { "name": "Esmarch tourniquet", "filter": "AllFilterBtn", "minSellPrice": 4262, "fenceCost": 2496 },
+        { "name": "Esmarch tourniquet", "filter": "MedFilterBtn", "minSellPrice": 4262, "fenceCost": 2496 },
         { "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
-        { "name": "BOSS cap", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 10859 },
-        #{ "name": "Aseptic bandage", "filter": "AllFilterBtn", "minSellPrice": 2147, "fenceCost": 1893} # Only 142 ruble profit. 
+        { "name": "Anti-fragmentation glasses", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 2836 },
+        #{ "name": "BOSS cap", "filter": "ClothingFilterBtn", "minSellPrice": 19997, "fenceCost": 10859 },
+        #{ "name": "Aseptic bandage", "filter": "MedFilterBtn", "minSellPrice": 2147, "fenceCost": 1893} # Only 142 ruble profit. 
     ]
 
     MustClickImage("TradersTab")
@@ -309,13 +330,15 @@ def BuyFromFence():
     ClickImage("BuyBtn") #Makes sure the Buy tab is selected instead of the Sell tab.
 
     while not stashFull:
-        checkRubleBalance()
+        #checkRubleBalance() # THIS NEEDS TO BE FIXED. 
         for item in itemsToBuy:
+            if stashFull: return
             BuyItemFromFence(item['name'], filterName=item["filter"])
             
 def BuyItemFromFence(itemName, quantity=50, filterName="AllFilterBtn"):
     ClickImage(filterName, 0.1, traderStoreRegion) #Apply a filter if specified. 
     CheckForCaptcha()
+    ClickImage("OKBtn", 0.1) # Incase there is a popup that was missed. 
 
     print("Attempting to buy " + itemName)
     if ClickImage(itemName, 0.1, traderStoreRegion): # Clicks on the item I want to buy. 
@@ -324,6 +347,7 @@ def BuyItemFromFence(itemName, quantity=50, filterName="AllFilterBtn"):
         ClickImage("DealBtn", 0.1)
         time.sleep(1) # Wait for any popup messages to appear. 
 
+        # Merge all these IF statements into one. 
         if (ClickImage("ItemAlreadySold", 2.5)): #Needs to be a high wait time. 
             print("Item already sold")
             ClickImage("OKBtn", 0.1)
@@ -347,7 +371,10 @@ def BuyItemFromFence(itemName, quantity=50, filterName="AllFilterBtn"):
     else:
         ClickImage("RefreshStore", 0.1)
 
-def checkRubleBalance():
+def SellFromFence():
+    return
+
+def CheckRubleBalance():
     # My ruble balance is located in different locations depending on which tab is selected. 
     characterTabRubleRegion = (1620, 45, 145, 25)
     traderTabRubleRegion = (1360, 105, 120, 20)
@@ -366,10 +393,9 @@ def checkRubleBalance():
     formattedNum = f"₽{myRublesInt:,}"
     print(f"My Rubles: {formattedNum}")
 
-    if (int(myRublesStr) < 500000): collectRublesFromRagman()
+    if (int(myRublesStr) < 100000): CollectRublesFromRagman()
 
-
-def collectRublesFromRagman():
+def CollectRublesFromRagman():
     ClickImage("MessengerTab")
     time.sleep(2)                       # Wait for the msg popup to appear.
     ClickImage("RagmanMsgSelected")     # Don't know which image is going to be visible so we check both.
@@ -380,19 +406,87 @@ def collectRublesFromRagman():
     MustClickImage("AcceptBtn")         # Closes the collection window.
     return
 
+def GetRegionCenters(firstRegion, regionNum):
+    left, top, width, height = firstRegion
+    
+    for i in range(regionNum):
+        # Calculate the center x and y for the current region
+        center_x = left + width / 2
+        center_y = top + height / 2
+        
+        # Add the center coordinates to the list
+        regionCoordinates = (center_x, center_y)
+        
+        # Update the top for the next region (since they cascade vertically with no space)
+        top += height  # Move the top of the next region down by the height of the current region
+    return regionCoordinates
 
-def SellItemOnFlee(itemFileName, sellPrice):
-    MustClickImage("FleeMarketTab")
-    MustClickImage("AddOfferBtn")
-    MustClickImage("AutoSelectSimilarBtn")
-    ScrollToClick(itemFileName, 1, fleeSellingRegion)
-    time.sleep(2)
-    ClickImage("RubleSellPriceTextBox", 3)
-    time.sleep(1)
-    pyautogui.write(str(sellPrice))
-    ClickImage("PlaceOfferBtn", 3)
-    ClickImage("MainMenuTab", 2)
+# Right clicks and item and filters by it on the flee. Looks at what the min price other people are selling it for. 
+def GetItemMinPrice(image):
+    position = FindImageOnScreen(image)
+    pyautogui.rightClick(position)
+    ClickImage("FilterByItem", 0.3)
 
+def BuyFromWishList():
+    # Loop through each item on the wishlist. Need to specify which row to the item is in that we want to buy. 
+    wishListRowSize = (70, 150, 300, 30)
+    itemRowSize = (1700, 145, 130, 70)
+
+    ClickImage("OKBtn") #Just incase there is a popup overlay still from buying from fence. 
+    ClickImage("FleaMarketTab")
+    ClickImage("BrowseBtn", 0.5)
+    ClickImage("BarterItemsGroup", 1)  #Makes sure an item from my wishlist isn't already selected. 
+    ClickImage("WishListBtn", 1)
+
+    count = 1
+    for item in wishListItems:
+        print("Attempting to buy: " + item['name'])        
+        itemCenter = GetRegionCenters(wishListRowSize, count)
+        Click(itemCenter, 1.5)
+        Click(GetRegionCenters(itemRowSize, item["rowToPurchase"]), 0.5)
+        ClickImage("AllBtn", 0.5)
+        ClickImage("AllBarterBtn", 0.5)
+        if ClickImage("InsufficientBarterItemsIcon"):
+            print("Insufficient Barter Items")
+            pyautogui.press('esc')
+        else:
+            time.sleep(0.5) #This can prob be shorter.
+            pyautogui.write("y")
+        ClickImage("OKBtn") #Incase you run our of storage space. 
+        count = count+1
+
+def SellFromWishList():
+    for item in wishListItems:
+        SellItemOnFlee(item['name'], item['minSellPrice'], item['rowWithMinCost'])
+
+def SellItemOnFlee(itemFileName, sellPrice, rowWithMinCost):
+    MustClickImage("MainMenuTab")
+    print("Attempting to sell: " + itemFileName)
+    ClickImage("FleaMarketTab")
+
+    # If there is an availible sell slot
+    if ClickImage("AddOfferBtn", 3): # Needs a long wait. 
+        ClickImage("AutoSelectUnChecked", 2)
+
+        if ScrollToClick(itemFileName, 1, fleeSellingRegion):
+            ClickImage("RubleSellPriceTextBox", 3)
+            time.sleep(1)
+            pyautogui.write(str(sellPrice))
+            ClickImage("PlaceOfferBtn", 0.5)
+            return True
+        else:
+            print("Could not find " + itemFileName + " to sell")    
+            return False
+    else:
+        print("NO MORE SELL SLOTS AVAILIBLE")
+        return False
+
+# THIS DONES'T WORK YET. WE ARE GOING TO ASSUME WE ALWAYS HAVE AT LEAST 1 SELL SLOT AVAILIBLE. 
+def getAvailibleSellSlots():
+    #text = ImageRecognition(fleaOfferNumRegion)
+    #print(text)
+    numSellSlots = 1
+    return numSellSlots
 
 #Main Loop
 if __name__ == "__main__":
@@ -401,9 +495,12 @@ if __name__ == "__main__":
     if getattr(sys, 'frozen', False): messagebox.showinfo("Information", "To stop the progam, move your cursor to the  top left of the screen.\nProgram will start when you press OK.")
     
     CheckForCaptcha()
+
     while False: #Used to test the position of stuff on my screen. Update it to True to use it. 
         x, y = pyautogui.position()
-        print(f"Current cursor position: ({x}, {y})")
+        #print(f"Current cursor position: ({x}, {y})")
+        BuyFromWishList()
+        SellFromWishList()
         #CheckForCaptcha()
         #DrawRedBox(CaptchaImageRegion)
 
@@ -414,12 +511,14 @@ if __name__ == "__main__":
         ClickImage("MainMenuTab", 2)
         ClickImage("CharacterTab", 2)
         
+        BuyFromWishList()
+        #SellFromWishList()
         
+        BuyFromFence()        
+        #SellFromFence()
 
-        BuyFromFence()
-        
-        
-        SellItemOnFlee("Esmarch tourniquet", 4262)
+        SellItemOnFlee("Esmarch tourniquet", 4262, 1)
+        SellItemOnFlee("Lower half-mask", 7997, 1)
         #SellItemOnFlee("Aseptic bandage", 2149)
         #SellItemOnFlee("Lower half-mask", 7497)
         stashFull = False
