@@ -48,14 +48,17 @@ fleeSellingRegion = (0, 0, 650, 1000) #Your flee selling windown needs to be in 
 #CaptchaTextRegion = (777, 365, 372, 26)
 CaptchaImageRegion = (684, 230, 546, 813)
 fleaOfferNumRegion = (420, 46, 33, 17)
+wishListRowSize = (70, 150, 300, 30)
+itemRowSize = (1700, 145, 130, 70)
+fleaPriceRegion = (1340, 145, 140, 70)
 
 # IF THIS LIST IS NOT IN THE SAME ORDER AS MY IN GAME WISH LIST, IT WILL BUY THE WRONG ROW ITEM. 
 wishListItems = [
-    { "name": "AK-101 Mag", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 4497, "traderCost": 1808 },
-    { "name": "Ammo Case", "rowToPurchase": 1, "rowWithMinCost": 3, "minSellPrice": 199897, "traderCost": 162552 },
-    { "name": "F-1 hand grenade", "rowToPurchase": 2, "rowWithMinCost": 5,"minSellPrice": 14997, "traderCost": 9156 },
-    { "name": "PACA", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 29151, "traderCost": 10000 },
-    { "name": "Rye crutons", "rowToPurchase": 2, "rowWithMinCost": 3, "minSellPrice": 19997, "traderCost": 10000 },
+    { "name": "AK-101 Mag", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 3997, "maxSellPrice": 4997,  "traderCost": 1808 },
+    { "name": "Ammo Case", "rowToPurchase": 1, "rowWithMinCost": 3, "minSellPrice": 189897, "maxSellPrice": 199897,"traderCost": 162552 },
+    { "name": "F-1 hand grenade", "rowToPurchase": 2, "rowWithMinCost": 5,"minSellPrice": 14997, "maxSellPrice": 15997,"traderCost": 9156 },
+    { "name": "PACA", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 29151, "maxSellPrice": 29151, "traderCost": 10000 },
+    { "name": "Rye crutons", "rowToPurchase": 2, "rowWithMinCost": 3, "minSellPrice": 29997, "maxSellPrice": 29997, "traderCost": 10000 },
 ]
 
 stashFull = False
@@ -174,10 +177,12 @@ def ScrollToClick(imageName, delay=1, region=None):
         position = FindImageOnScreen(imageName, region)
         if position:
             print(f"Found {imageName} at: {position}")
-            #*****************************************************************************
-            # NEED TO RIGHTCLICK AND CHECK THE MIN PRICE OF THE ITEM ON THE FLEE.
-            GetItemMinPrice(imageName)
-            #*****************************************************************************
+
+            # Right clicks and filters by the item so we can see what its selling for. 
+            pyautogui.rightClick(position)
+            ClickImage("FilterByItem", 0.3)
+
+            # Select the item to sell. We do this after filtering by the item since the image looks different when selected. 
             Click(position, delay)
             isSuccessfull = True
             return True
@@ -189,7 +194,6 @@ def ScrollToClick(imageName, delay=1, region=None):
 
     if isSuccessfull == False:
         return False   
-
 
 def PreprocessImage(image):
     # Convert to grayscale
@@ -214,7 +218,6 @@ def ImageRecognition(captureRegion):
     # Use Tesseract to do OCR on the image
     customConfig = r'--oem 3 --psm 6 tessedit_char_whitelist=0123456789₽'
     number = pytesseract.image_to_string(image, config=customConfig)
-    number = number[1:] #Removes the fist number since the image recognition thinks the curancy symbol is a '2'
     
     # Remove any unwanted characters like 'P', and newlines, leaving digits
     cleaned_number = re.sub(r'[^0-9]', '', number).strip()
@@ -408,7 +411,7 @@ def CollectRublesFromRagman():
 
 def GetRegionCenters(firstRegion, regionNum):
     left, top, width, height = firstRegion
-    
+
     for i in range(regionNum):
         # Calculate the center x and y for the current region
         center_x = left + width / 2
@@ -421,17 +424,16 @@ def GetRegionCenters(firstRegion, regionNum):
         top += height  # Move the top of the next region down by the height of the current region
     return regionCoordinates
 
-# Right clicks and item and filters by it on the flee. Looks at what the min price other people are selling it for. 
-def GetItemMinPrice(image):
-    position = FindImageOnScreen(image)
-    pyautogui.rightClick(position)
-    ClickImage("FilterByItem", 0.3)
+def GetPriceRegion(firstRegion, regionNum):
+    left, top, width, height = firstRegion
+    
+    for i in range(1, regionNum):                
+        # Update the top for the next region (since they cascade vertically with no space)
+        top += height  # Move the top of the next region down by the height of the current region
+    return (left, top, width, height)
 
 def BuyFromWishList():
     # Loop through each item on the wishlist. Need to specify which row to the item is in that we want to buy. 
-    wishListRowSize = (70, 150, 300, 30)
-    itemRowSize = (1700, 145, 130, 70)
-
     ClickImage("OKBtn") #Just incase there is a popup overlay still from buying from fence. 
     ClickImage("FleaMarketTab")
     ClickImage("BrowseBtn", 0.5)
@@ -440,10 +442,10 @@ def BuyFromWishList():
 
     count = 1
     for item in wishListItems:
-        print("Attempting to buy: " + item['name'])        
+        print("Attempting to buy: " + item['name'])       
         itemCenter = GetRegionCenters(wishListRowSize, count)
-        Click(itemCenter, 1.5)
-        Click(GetRegionCenters(itemRowSize, item["rowToPurchase"]), 0.5)
+        Click(itemCenter, 1.5) # Clicks the item in the wishlist
+        Click(GetRegionCenters(itemRowSize, item["rowToPurchase"]), 0.5) # Clicks the PURCHASE button. 
         ClickImage("AllBtn", 0.5)
         ClickImage("AllBarterBtn", 0.5)
         if ClickImage("InsufficientBarterItemsIcon"):
@@ -457,29 +459,59 @@ def BuyFromWishList():
 
 def SellFromWishList():
     for item in wishListItems:
-        SellItemOnFlee(item['name'], item['minSellPrice'], item['rowWithMinCost'])
+        SellItemOnFlee(item)
 
-def SellItemOnFlee(itemFileName, sellPrice, rowWithMinCost):
+def SellItemOnFlee(item, sellPrice=None):
     MustClickImage("MainMenuTab")
-    print("Attempting to sell: " + itemFileName)
+    print("Attempting to sell: " + item['name'])
     ClickImage("FleaMarketTab")
 
     # If there is an availible sell slot
     if ClickImage("AddOfferBtn", 3): # Needs a long wait. 
         ClickImage("AutoSelectUnChecked", 2)
 
-        if ScrollToClick(itemFileName, 1, fleeSellingRegion):
-            ClickImage("RubleSellPriceTextBox", 3)
-            time.sleep(1)
-            pyautogui.write(str(sellPrice))
+        if ScrollToClick(item['name'], 1, fleeSellingRegion):
+            if sellPrice == None: # If I am selling an item from my wishlist. 
+                sellPrice = GetItemSellPrice(item)
+                if sellPrice == False: # This item is already for sale, or the image recognition could not determin the min flea price. 
+                    return False
+                ClickImage("RubleSellPriceTextBox", 3)
+                time.sleep(1)            
+                pyautogui.write(str(sellPrice))
+            else: # Used when calling the function directly such as selling esmarches. 
+                pyautogui.write(str(sellPrice))
             ClickImage("PlaceOfferBtn", 0.5)
             return True
         else:
-            print("Could not find " + itemFileName + " to sell")    
+            print("Could not find " + item['name'] + " to sell")    
             return False
     else:
         print("NO MORE SELL SLOTS AVAILIBLE")
         return False
+    
+def GetItemSellPrice(item):
+    # Checks if the item is already for sale. If  it is, don't sell another. 
+    if FindImageOnScreen("RemoveFromFleaBtn"):
+        print(item["name"] + " is already for sale")
+        return False
+
+    # Used to specify the exact sell price every time. 
+    elif item["minSellPrice"] == item['maxSellPrice']:
+        return item["minSellPrice"]
+    
+    # Check the cheapest value someone else is selling the item for and under cut them by 3 rubles. 
+    region = GetPriceRegion(fleaPriceRegion, item["rowWithMinCost"])
+    strPrice = ImageRecognition(region)
+    intPrice = int(strPrice)
+    print("Min price on the flea is: " + strPrice)
+    if strPrice == "":
+        print("Something went wrong identifying the min flea price")
+        return False
+    elif intPrice < int(item["minSellPrice"]):
+        print(f"Current price ({strPrice}) is lower than what I am willing to sell at ({item['minSellPrice']})")
+        return False
+    return intPrice-3 # Sell the item for 3 ruble less then the minimum offer.  
+
 
 # THIS DONES'T WORK YET. WE ARE GOING TO ASSUME WE ALWAYS HAVE AT LEAST 1 SELL SLOT AVAILIBLE. 
 def getAvailibleSellSlots():
@@ -498,11 +530,11 @@ if __name__ == "__main__":
 
     while False: #Used to test the position of stuff on my screen. Update it to True to use it. 
         x, y = pyautogui.position()
-        #print(f"Current cursor position: ({x}, {y})")
-        BuyFromWishList()
-        SellFromWishList()
+        print(f"Current cursor position: ({x}, {y})")
+        #BuyFromWishList()
+        #SellFromWishList()
         #CheckForCaptcha()
-        #DrawRedBox(CaptchaImageRegion)
+        #DrawRedBox(fleaPriceRegion)
 
     screenRegion = GetMonitorRegion()
 
@@ -512,8 +544,10 @@ if __name__ == "__main__":
         ClickImage("CharacterTab", 2)
         
         BuyFromWishList()
-        #SellFromWishList()
+        SellFromWishList()
         
+        CollectRublesFromRagman()
+
         BuyFromFence()        
         #SellFromFence()
 
