@@ -322,7 +322,7 @@ def ClickAllInstances(imageName, theRegion=None, min_distance=60):
 def BuyFromFence():
     itemsToBuy = [
         { "name": "Esmarch tourniquet", "filter": "MedFilterBtn", "minSellPrice": 4262, "fenceCost": 2496 },
-        { "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
+        #{ "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
         { "name": "Anti-fragmentation glasses", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 2836 },
         #{ "name": "BOSS cap", "filter": "ClothingFilterBtn", "minSellPrice": 19997, "fenceCost": 10859 },
         #{ "name": "Aseptic bandage", "filter": "MedFilterBtn", "minSellPrice": 2147, "fenceCost": 1893} # Only 142 ruble profit. 
@@ -510,6 +510,10 @@ def GetItemSellPrice(item):
     elif intPrice < int(item["minSellPrice"]):
         print(f"Current price ({strPrice}) is lower than what I am willing to sell at ({item['minSellPrice']})")
         return False
+    elif intPrice > int(item["maxSellPrice"]):
+        print(f"Current price ({strPrice}) is greater than what I am willing to sell at ({item['maxSellPrice']})")
+        return int(item["maxSellPrice"])
+    
     return intPrice-3 # Sell the item for 3 ruble less then the minimum offer.  
 
 
@@ -549,12 +553,21 @@ if __name__ == "__main__":
         CollectRublesFromRagman()
 
         BuyFromFence()        
+
+        #This doesn't exist yet. 
         #SellFromFence()
 
-        SellItemOnFlee("Esmarch tourniquet", 4262, 1)
-        SellItemOnFlee("Lower half-mask", 7997, 1)
+        SellItemOnFlee({ "name": "Esmarch tourniquet", "rowWithMinCost": 1, "minSellPrice": 4262, "maxSellPrice": 4262,  "traderCost": 2496 })
+        
+        # **********************************************************************
+        # CAN'T FIND LOWER HALF MASK IN MY INVENTORY FOR SOME REASON.
+        # I AM NO LONGER BUYING IT FROM FENCE UNTIL THIS IS RESOLVED. 
+        # SellItemOnFlee({ "name": "Lower half-mask", "rowWithMinCost": 1, "minSellPrice": 5997, "maxSellPrice": 7997,  "traderCost": 3399 },)
+        # **********************************************************************
+        
+        SellItemOnFlee({ "name": "Anti-fragmentation glasses", "rowWithMinCost": 1, "minSellPrice": 4997, "maxSellPrice": 6997,  "traderCost": 2836 },)
         #SellItemOnFlee("Aseptic bandage", 2149)
-        #SellItemOnFlee("Lower half-mask", 7497)
+
         stashFull = False
 
 print('Program stopped')
