@@ -3,16 +3,15 @@ SET UP:
 1. Must set your monitor resolution to 1920 x 1080.
 
 *** Discuss wishlist setup ***
+Your wishlist must be the exact same as your config file. Including order of items. 
 
 """
 
 
 """
 *** To DO ***
-1. Add a msg  box that the program has stopped when the user moves their cursor to the top left of the screen. 
-2. When I buy an item from fence, I need to keep buying it until its out of stock before switching to the next item. 
-3. If I drop below a specific amount of money, I need to accept the money from Ragman.
-4. Buy barter items low and resell them high. Ex: buy wires for 10k or less and sell hem for 13k.
+1. When I buy an item from fence, I need to keep buying it until its out of stock before switching to the next item. 
+2. Buy barter items low and resell them high. Ex: buy wires for 10k or less and sell hem for 13k.
 
 1. Esmarch improvments:
     - If I am only buying esmarches, I should not bother refreshing the stock if there is 1 image on the screen. Will allow me to buy them faster. 
@@ -55,10 +54,11 @@ fleaPriceRegion = (1340, 145, 140, 70)
 # IF THIS LIST IS NOT IN THE SAME ORDER AS MY IN GAME WISH LIST, IT WILL BUY THE WRONG ROW ITEM. 
 wishListItems = [
     { "name": "AK-101 Mag", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 3997, "maxSellPrice": 4997,  "traderCost": 1808 },
-    { "name": "Ammo Case", "rowToPurchase": 1, "rowWithMinCost": 3, "minSellPrice": 189897, "maxSellPrice": 199897,"traderCost": 162552 },
-    { "name": "F-1 hand grenade", "rowToPurchase": 2, "rowWithMinCost": 5,"minSellPrice": 14997, "maxSellPrice": 15997,"traderCost": 9156 },
+    #{ "name": "Ammo Case", "rowToPurchase": 1, "rowWithMinCost": 3, "minSellPrice": 189897, "maxSellPrice": 199897,"traderCost": 162552 },
+    { "name": "F-1 hand grenade", "rowToPurchase": 1, "rowWithMinCost": 3,"minSellPrice": 13997, "maxSellPrice": 15997,"traderCost": 9156 },
     { "name": "PACA", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 29151, "maxSellPrice": 29151, "traderCost": 10000 },
-    { "name": "Rye crutons", "rowToPurchase": 2, "rowWithMinCost": 3, "minSellPrice": 29997, "maxSellPrice": 29997, "traderCost": 10000 },
+    { "name": "RGD-5", "rowToPurchase": 2, "rowWithMinCost": 3, "minSellPrice": 13997, "maxSellPrice": 16997, "traderCost": 11822 },
+    { "name": "Rye crutons", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 16997, "maxSellPrice": 23332, "traderCost": 10000 },
 ]
 
 stashFull = False
@@ -323,7 +323,7 @@ def BuyFromFence():
     itemsToBuy = [
         { "name": "Esmarch tourniquet", "filter": "MedFilterBtn", "minSellPrice": 4262, "fenceCost": 2496 },
         #{ "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
-        { "name": "Anti-fragmentation glasses", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 2836 },
+        #{ "name": "Anti-fragmentation glasses", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 2836 },
         #{ "name": "BOSS cap", "filter": "ClothingFilterBtn", "minSellPrice": 19997, "fenceCost": 10859 },
         #{ "name": "Aseptic bandage", "filter": "MedFilterBtn", "minSellPrice": 2147, "fenceCost": 1893} # Only 142 ruble profit. 
     ]
@@ -400,13 +400,14 @@ def CheckRubleBalance():
 
 def CollectRublesFromRagman():
     ClickImage("MessengerTab")
-    time.sleep(2)                       # Wait for the msg popup to appear.
-    ClickImage("RagmanMsgSelected")     # Don't know which image is going to be visible so we check both.
+    ClickImage("RagmanMsgSelected", 2)     # Don't know which image is going to be visible so we check both.
     ClickImage("RagmanMsgNotSelected")  # Don't know which image is going to be visible so we check both.
-    ClickImage("ReceiveAllBtn1")        # First click is to display my money to collect. 
-    MustClickImage("ReceiveAllBtn2")    # Second click is to actaully collect the money.
-    time.sleep(5)                       # The more money I have, the longer I need to wait. 
-    MustClickImage("AcceptBtn")         # Closes the collection window.
+    if (ClickImage("ReceiveAllBtn1",0.2) == False):        # First click is to display my money to collect. 
+        ClickImage("CloseBtn", 0.2)
+    if ClickImage("ReceiveAllBtn2", 5):    # Second click is to actaully collect the money.
+        MustClickImage("AcceptBtn", 5)         # Closes the collection window.
+    ClickImage("YesBtn", 0.2)         # Closes the collection window.
+    ClickImage("CloseBtn", 0.2)         # Closes the collection window.
     return
 
 def GetRegionCenters(firstRegion, regionNum):
@@ -462,13 +463,13 @@ def SellFromWishList():
         SellItemOnFlee(item)
 
 def SellItemOnFlee(item, sellPrice=None):
-    MustClickImage("MainMenuTab")
+    ClickImage("MainMenuTab")
     print("Attempting to sell: " + item['name'])
-    ClickImage("FleaMarketTab")
+    ClickImage("FleaMarketTab", 2)
 
     # If there is an availible sell slot
-    if ClickImage("AddOfferBtn", 3): # Needs a long wait. 
-        ClickImage("AutoSelectUnChecked", 2)
+    if ClickImage("AddOfferBtn", 4): # Needs a long wait. 
+        ClickImage("AutoSelectUnChecked", 3)
 
         if ScrollToClick(item['name'], 1, fleeSellingRegion):
             if sellPrice == None: # If I am selling an item from my wishlist. 
@@ -529,7 +530,7 @@ if __name__ == "__main__":
     
     # Code that only runs when packaged (i.e., when running as an executable)
     if getattr(sys, 'frozen', False): messagebox.showinfo("Information", "To stop the progam, move your cursor to the  top left of the screen.\nProgram will start when you press OK.")
-    
+
     CheckForCaptcha()
 
     while False: #Used to test the position of stuff on my screen. Update it to True to use it. 
@@ -548,24 +549,24 @@ if __name__ == "__main__":
         ClickImage("CharacterTab", 2)
         
         BuyFromWishList()
-        SellFromWishList()
+        SellFromWishList()              
+        SellItemOnFlee({ "name": "Esmarch tourniquet", "rowWithMinCost": 1, "minSellPrice": 4262, "maxSellPrice": 4262,  "traderCost": 2496 })       
         
         CollectRublesFromRagman()
 
-        BuyFromFence()        
+        BuyFromFence()               
 
         #This doesn't exist yet. 
         #SellFromFence()
 
-        SellItemOnFlee({ "name": "Esmarch tourniquet", "rowWithMinCost": 1, "minSellPrice": 4262, "maxSellPrice": 4262,  "traderCost": 2496 })
-        
+                 
         # **********************************************************************
         # CAN'T FIND LOWER HALF MASK IN MY INVENTORY FOR SOME REASON.
         # I AM NO LONGER BUYING IT FROM FENCE UNTIL THIS IS RESOLVED. 
         # SellItemOnFlee({ "name": "Lower half-mask", "rowWithMinCost": 1, "minSellPrice": 5997, "maxSellPrice": 7997,  "traderCost": 3399 },)
         # **********************************************************************
         
-        SellItemOnFlee({ "name": "Anti-fragmentation glasses", "rowWithMinCost": 1, "minSellPrice": 4997, "maxSellPrice": 6997,  "traderCost": 2836 },)
+        #SellItemOnFlee({ "name": "Anti-fragmentation glasses", "rowWithMinCost": 1, "minSellPrice": 4997, "maxSellPrice": 6997,  "traderCost": 2836 },)
         #SellItemOnFlee("Aseptic bandage", 2149)
 
         stashFull = False
