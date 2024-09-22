@@ -53,10 +53,11 @@ fleaPriceRegion = (1340, 145, 140, 70)
 
 # IF THIS LIST IS NOT IN THE SAME ORDER AS MY IN GAME WISH LIST, IT WILL BUY THE WRONG ROW ITEM. 
 wishListItems = [
+    { "name": "AK Handguard", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 8997, "maxSellPrice": 13997,  "traderCost": 7747 },
     { "name": "AK-101 Mag", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 3997, "maxSellPrice": 4997,  "traderCost": 1808 },
     #{ "name": "Ammo Case", "rowToPurchase": 1, "rowWithMinCost": 3, "minSellPrice": 189897, "maxSellPrice": 199897,"traderCost": 162552 },
     { "name": "F-1 hand grenade", "rowToPurchase": 1, "rowWithMinCost": 3,"minSellPrice": 13997, "maxSellPrice": 15997,"traderCost": 9156 },
-    { "name": "PACA", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 29151, "maxSellPrice": 29151, "traderCost": 10000 },
+    { "name": "PACA", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 29151, "maxSellPrice": 29151, "tryaderCost": 10000 },
     { "name": "RGD-5", "rowToPurchase": 2, "rowWithMinCost": 3, "minSellPrice": 13997, "maxSellPrice": 16997, "traderCost": 11822 },
     { "name": "Rye crutons", "rowToPurchase": 1, "rowWithMinCost": 2, "minSellPrice": 16997, "maxSellPrice": 23332, "traderCost": 10000 },
 ]
@@ -322,7 +323,7 @@ def ClickAllInstances(imageName, theRegion=None, min_distance=60):
 def BuyFromFence():
     itemsToBuy = [
         { "name": "Esmarch tourniquet", "filter": "MedFilterBtn", "minSellPrice": 4262, "fenceCost": 2496 },
-        #{ "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
+        { "name": "Lower half-mask", "filter": "ClothingFilterBtn", "minSellPrice": 6497, "fenceCost": 3399 },
         #{ "name": "Anti-fragmentation glasses", "filter": "ClothingFilterBtn", "minSellPrice": 4262, "fenceCost": 2836 },
         #{ "name": "BOSS cap", "filter": "ClothingFilterBtn", "minSellPrice": 19997, "fenceCost": 10859 },
         #{ "name": "Aseptic bandage", "filter": "MedFilterBtn", "minSellPrice": 2147, "fenceCost": 1893} # Only 142 ruble profit. 
@@ -547,10 +548,11 @@ if __name__ == "__main__":
         #Setup by clicking the main menu first if not already on it, then clicking the character tab. 
         ClickImage("MainMenuTab", 2)
         ClickImage("CharacterTab", 2)
-        
+
+        SellItemOnFlee({ "name": "Esmarch tourniquet", "rowWithMinCost": 1, "minSellPrice": 4262, "maxSellPrice": 4262,  "traderCost": 2496 })               
+
         BuyFromWishList()
-        SellFromWishList()              
-        SellItemOnFlee({ "name": "Esmarch tourniquet", "rowWithMinCost": 1, "minSellPrice": 4262, "maxSellPrice": 4262,  "traderCost": 2496 })       
+        SellFromWishList()                      
         
         CollectRublesFromRagman()
 
@@ -563,7 +565,7 @@ if __name__ == "__main__":
         # **********************************************************************
         # CAN'T FIND LOWER HALF MASK IN MY INVENTORY FOR SOME REASON.
         # I AM NO LONGER BUYING IT FROM FENCE UNTIL THIS IS RESOLVED. 
-        # SellItemOnFlee({ "name": "Lower half-mask", "rowWithMinCost": 1, "minSellPrice": 5997, "maxSellPrice": 7997,  "traderCost": 3399 },)
+        SellItemOnFlee({ "name": "Lower half-mask", "rowWithMinCost": 1, "minSellPrice": 6997, "maxSellPrice": 7997,  "traderCost": 3399 },)
         # **********************************************************************
         
         #SellItemOnFlee({ "name": "Anti-fragmentation glasses", "rowWithMinCost": 1, "minSellPrice": 4997, "maxSellPrice": 6997,  "traderCost": 2836 },)
